@@ -4,7 +4,7 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from datetime import datetime, timedelta
 import random
-from textblob import TextBlob
+from sentiment_label import analyze_sentiment
 
 # Updated dictionary without duplicates
 reference_details = {
@@ -124,19 +124,10 @@ def get_recommendations(data, name, category=None, n=5):
     new_activities = recommendations[~recommendations.index.isin(user_activities)]
     return new_activities.head(n)
 
-# Analyze sentiment
-def analyze_sentiment(text):
-    blob = TextBlob(text)
-    if blob.sentiment.polarity > 0:
-        return "positive"
-    elif blob.sentiment.polarity < 0:
-        return "negative"
-    else:
-        return "neutral"
 
 # Streamlit app
 def main():
-    st.title("User-Based Recommendation System")
+    st.title("The Grand Hotel Recommendations System")
 
     if "feedback_submitted" not in st.session_state:
         st.session_state.feedback_submitted = False
