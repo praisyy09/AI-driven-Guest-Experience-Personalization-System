@@ -1,0 +1,10 @@
+pandas
+streamlit
+faker
+numpy
+scikit-learn
+datetime
+random
+textblob
+collections
+
