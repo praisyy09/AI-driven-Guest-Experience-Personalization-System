@@ -12,20 +12,21 @@ load_dotenv()
 # Initialize OpenAI API
 openai = OpenAI(
     base_url="https://openrouter.ai/api/v1",
-    api_key='yourapi' 
+    api_key='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' # Ensure API key is loaded securely
 )
 
+# Define sentiment analysis function using OpenAI API
 @retry(
     wait=wait_exponential(multiplier=1, min=4, max=60),  
     stop=stop_after_attempt(3)  
 )
 def analyze_sentiment(text: str) -> Tuple[str, float]:
     try:
-        time.sleep(10)  
+        time.sleep(10)  # Introducing a delay to prevent hitting API limits
 
-       
+        # Request to the OpenAI API for sentiment analysis
         completion = openai.chat.completions.create(
-            model="google/gemini-2.0-flash-exp:free",  
+            model="google/gemini-2.0-flash-exp:free",  # Specify your model name
             messages=[
                 {
                     "role": "system",
