@@ -12,7 +12,7 @@ load_dotenv()
 # Initialize OpenAI API
 openai = OpenAI(
     base_url="https://openrouter.ai/api/v1",
-    api_key='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' # Ensure API key is loaded securely
+    api_key='yourkey' # Ensure API key is loaded securely
 )
 
 # Define sentiment analysis function using OpenAI API
