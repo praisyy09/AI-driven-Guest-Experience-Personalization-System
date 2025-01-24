@@ -4,34 +4,54 @@ import numpy as np
 from sklearn.metrics.pairwise import cosine_similarity
 from datetime import datetime, timedelta
 import random
+import re
+from slack_sdk import WebClient
+from slack_sdk.errors import SlackApiError
 from sentiment_label import analyze_sentiment
+from slack_sdk import WebClient
+from slack_sdk.errors import SlackApiError
 
-# Updated dictionary without duplicates
-reference_details = {
+
+
+reference_details =  {
     'Wellness': [
         ('spa', 'spa treatments'),
         ('massage', 'massage services'),
-        ('fitness', 'fitness center')
+        ('yoga', 'yoga classes'),
+        ('meditation', 'meditation sessions'),
+        ('fitness_center', 'fitness center'),
+        ('sauna', 'sauna'),
+        ('steam_room', 'steam room'),
+        ('relaxation_zone', 'relaxation zones') 
     ],
     'Entertainment': [
-        ('karaoke', 'karaoke nights'),
+        ('live_music', 'live music'),
         ('dj', 'DJ sets'),
-        ('theater', 'theater performances')
+        ('karaoke', 'karaoke nights'),
+        ('movie_night', 'movie nights'),
+        ('games', 'board games, video games'),
+        ('nightlife', 'nightlife options') 
     ],
     'Dining': [
         ('restaurant', 'restaurant dining'),
         ('bar', 'bar/lounge'),
-        ('breakfast', 'breakfast options')
+        ('room_service', 'room service'),
+        ('fine_dining', 'fine dining'),
+        ('casual_dining', 'casual dining'),
+        ('breakfast', 'breakfast options'), 
+        ('vegan', 'vegan options'),
+        ('vegetarian', 'vegetarian options')
     ],
     'Social Activities': [
-        ('board_games', 'board game nights'),
         ('social_events', 'social events'),
-        ('pub_crawl', 'pub crawls')
+        ('theme_nights', 'themed nights'),
+        ('group_activities', 'group activities'), 
+        'live_music', 'live music' 
     ]
 }
 
-# Load dataset
-data = pd.read_csv("mydataset.csv")  # Replace with your dataset path
+
+data = pd.read_csv("mydataset.csv")  
 print(data.head())
 
 reshaped_data = pd.melt(
@@ -125,7 +145,76 @@ def get_recommendations(data, name, category=None, n=5):
     return new_activities.head(n)
 
 
-# Streamlit app
+
+
+def extract_categories_from_feedback(feedback):
+    categories = []
+    feedback = feedback.lower()  # Normalize feedback to lowercase
+
+    # Loop through categories and activities in reference_details
+    for category, activities in reference_details.items():
+        # Check if category name is in feedback
+        if category.lower() in feedback:
+            categories.append(category)
+
+        # Check if any activity (from values) is mentioned in feedback
+        for activity in activities:
+            activity_name = activity[0].lower()  # Normalize activity name to lowercase
+            if activity_name in feedback:
+                categories.append(category)
+                break  # No need to check further activities for this category
+
+    return categories
+
+
+import smtplib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+# Email sending function
+def send_email(subject, recipient, message_body):
+    sender_email = "senderemail"  
+    sender_password = "senderpassword"        
+    smtp_server = "smtp.gmail.com"           
+    smtp_port = 587                          
+
+    try:
+        # Set up the email content
+        msg = MIMEMultipart()
+        msg['From'] = sender_email
+        msg['To'] = recipient
+        msg['Subject'] = subject
+        msg.attach(MIMEText(message_body, 'plain'))
+
+        
+        server = smtplib.SMTP(smtp_server, smtp_port)
+        server.starttls()
+        server.login(sender_email, sender_password)
+        server.send_message(msg)
+        server.quit()
+        print("Email sent successfully.")
+    except Exception as e:
+        print(f"Failed to send email. Error: {str(e)}")
+
+
+slack_bot_token = "token"  
+
+
+slack_client = WebClient(token=slack_bot_token)
+def send_slack_notification(channel, message):
+    try:
+        response = slack_client.chat_postMessage(
+            channel=channel,
+            text=message
+        )
+        if response['ok']:
+            print("Slack message sent successfully!")
+        else:
+            print(f"Failed to send Slack message. Error: {response['error']}")
+    except SlackApiError as e:
+        print(f"Slack API Error: {e.response['error']}")
+
+
 def main():
     st.title("The Grand Hotel Recommendations System")
 
@@ -164,6 +253,33 @@ def main():
                     st.session_state.feedback_submitted = True
                     st.session_state.feedback = feedback
                     st.session_state.sentiment = sentiment
+
+                    if sentiment == "negative":
+                        
+                        categories_in_feedback = extract_categories_from_feedback(feedback)
+                        categories_str = ', '.join(categories_in_feedback)
+                        
+
+    
+                        
+                       
+                        slack_message = f"A *negative* review has been submitted by *{user_name}*\n\n*Feedback:* {feedback}\n\n*Categories mentioned:* {categories_str}\nPlease look into this matter."
+
+                        send_slack_notification("#test-slackbot",slack_message)
+
+                        
+                        
+
+                        email_subject = "Negative Feedback Alert"
+                        email_recipient = "springboardmentor543@gmail.com"  
+                        email_body = (
+                            f"Dear Manager,\n\n"
+                            f"A negative review has been submitted by {user_name}:\n\n"
+                            f"Feedback: {feedback}\n\n"
+                            f"Categories mentioned: {categories_str}\n\n"
+                            f"Please look into this matter."
+                        )
+                        send_email(email_subject, email_recipient, email_body)
 
         else:
             st.write("No recommendations found for the selected category.")
